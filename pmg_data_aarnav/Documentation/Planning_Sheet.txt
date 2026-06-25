@@ -1,0 +1,19 @@
+Planning Sheet
+
+Pioneer Data for Impact Report
+
+First save original spreadsheet as xlsv to have working backbone
+
+-Fix all errors
+--overflows, no raw data
+--#'s are overflow reference errors
+-Organize formatting
+--Reformat in new spreadsheet
+--Set up more derived values 
+
+Now, for overall improvements
+--Maximize scope, add YBY growth
+--Include mostly overall relevant stats for impact Report
+--Triage system for important information
+--Relational algorithm ie Volunteer Shifts and Patient Encounters
+
