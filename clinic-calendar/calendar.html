@@ -5,690 +5,697 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clinic Calendar</title>
+    <script src="https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js"></script>
     <style>
-        /* ── Reset ─────────────────────────────────── */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ms-blue: #0078d4;
+            --ms-blue-dark: #005a9e;
+            --ms-blue-light: #deecf9;
+            --surface: #ffffff;
+            --surface-2: #f5f5f5;
+            --surface-3: #ebebeb;
+            --text-primary: #201f1e;
+            --text-secondary: #605e5c;
+            --text-tertiary: #a19f9d;
+            --border: #edebe9;
+            --border-strong: #c8c6c4;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,.07), 0 2px 6px rgba(0,0,0,.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.08);
+            --shadow-lg: 0 16px 40px rgba(0,0,0,.16), 0 2px 6px rgba(0,0,0,.08);
+            --radius: 6px;
+            --radius-lg: 12px;
         }
 
-        /* ── Base ──────────────────────────────────── */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-                'Helvetica Neue', Arial, sans-serif;
-            background: #f1f5f9;
-            color: #1e293b;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--surface-2);
+            color: var(--text-primary);
             min-height: 100vh;
         }
 
-        /* ── Page Header ───────────────────────────── */
-        .page-header {
-            background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
-            color: white;
-            padding: 28px 32px 24px;
-            box-shadow: 0 2px 12px rgba(29, 78, 216, 0.3);
+        /* ── Header ──────────────────────────────────────── */
+        .app-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .page-header-inner {
-            max-width: 1200px;
+        .app-header-inner {
+            max-width: 1280px;
             margin: 0 auto;
+            padding: 0 24px;
+            height: 56px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
+            gap: 16px;
         }
 
-        .clinic-branding h1 {
-            font-size: 1.6rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .clinic-branding p {
-            font-size: 0.85rem;
-            opacity: 0.8;
-            margin-top: 2px;
-        }
-
-        .month-nav {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
-        .month-nav-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--ms-blue);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            border-radius: 8px;
-            width: 36px;
-            height: 36px;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .brand-text h1 {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .brand-text p {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .header-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-strong);
+            flex-shrink: 0;
+        }
+
+        .month-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
-            transition: background 0.15s;
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: background 0.1s, border-color 0.1s;
         }
 
-        .month-nav-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
+        .nav-btn:hover {
+            background: var(--surface-2);
+            border-color: var(--border-strong);
+            color: var(--text-primary);
         }
+
+        .nav-btn:active { background: var(--surface-3); }
 
         .month-label {
-            font-size: 1.25rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            min-width: 180px;
+            color: var(--text-primary);
+            min-width: 168px;
             text-align: center;
         }
 
         .today-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            color: white;
-            border-radius: 8px;
-            padding: 6px 14px;
-            font-size: 0.82rem;
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            font-size: 0.8rem;
             font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .today-btn:hover { background: var(--surface-2); }
+
+        .header-spacer { flex: 1; }
+
+        .ms-signin-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--ms-blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.82rem;
+            font-weight: 600;
             cursor: pointer;
             transition: background 0.15s;
+            white-space: nowrap;
         }
 
-        .today-btn:hover {
-            background: rgba(255, 255, 255, 0.28);
+        .ms-signin-btn:hover { background: var(--ms-blue-dark); }
+
+        .ms-signin-btn svg { flex-shrink: 0; }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
         }
 
-        /* ── Setup Banner ──────────────────────────── */
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            background: var(--ms-blue);
+            border-radius: 50%;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .signout-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            font-size: 0.72rem;
+            padding: 0 0 0 4px;
+            text-decoration: underline;
+        }
+
+        .signout-btn:hover { color: var(--text-primary); }
+
+        /* ── Setup Banner ────────────────────────────────── */
         .setup-banner {
-            background: #fffbeb;
-            border-bottom: 1px solid #fcd34d;
+            background: #fff4ce;
+            border-bottom: 2px solid #f7c948;
         }
 
         .setup-banner-inner {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 20px 32px;
+            padding: 16px 24px;
         }
 
         .setup-banner h2 {
-            font-size: 1rem;
+            font-size: 0.88rem;
             font-weight: 700;
-            color: #92400e;
+            color: #6b4e00;
             margin-bottom: 10px;
         }
 
         .setup-steps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .setup-step {
             background: white;
-            border: 1px solid #fde68a;
-            border-radius: 8px;
-            padding: 12px 14px;
+            border: 1px solid #f0d060;
+            border-radius: var(--radius);
+            padding: 10px 12px;
         }
 
         .setup-step strong {
             display: block;
-            font-size: 0.8rem;
-            color: #92400e;
+            font-size: 0.77rem;
+            color: #6b4e00;
             margin-bottom: 4px;
         }
 
         .setup-step span {
-            font-size: 0.78rem;
-            color: #78350f;
+            font-size: 0.74rem;
+            color: #7a5700;
             line-height: 1.5;
         }
 
         .setup-step code {
-            background: #fef3c7;
-            padding: 1px 5px;
+            background: #fef6d0;
+            padding: 1px 4px;
             border-radius: 3px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 0.74rem;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.71rem;
         }
 
-        /* ── Error / Status ────────────────────────── */
+        /* ── Status Bar ──────────────────────────────────── */
         .status-bar {
-            max-width: 1200px;
-            margin: 20px auto 0;
-            padding: 0 32px;
+            max-width: 1280px;
+            margin: 16px auto 0;
+            padding: 0 24px;
         }
 
         .status-msg {
-            border-radius: 10px;
-            padding: 14px 18px;
-            font-size: 0.875rem;
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            font-size: 0.85rem;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .status-msg.error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
+            background: #fde7e9;
+            border: 1px solid #f1b0b7;
+            color: #a4262c;
         }
 
         .status-msg.loading {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: #1e40af;
+            background: var(--ms-blue-light);
+            border: 1px solid #b4d6f1;
+            color: #004578;
         }
 
         .status-msg.empty {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .status-msg.info {
+            background: #dff6dd;
+            border: 1px solid #a9d3a4;
+            color: #107c10;
         }
 
         .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #bfdbfe;
-            border-top-color: #2563eb;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #b4d6f1;
+            border-top-color: var(--ms-blue);
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
             flex-shrink: 0;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Calendar Layout ─────────────────────────────── */
+        .cal-wrapper {
+            max-width: 1280px;
+            margin: 16px auto 40px;
+            padding: 0 24px;
         }
 
-        /* ── Calendar Wrapper ──────────────────────── */
-        .calendar-wrapper {
-            max-width: 1200px;
-            margin: 20px auto 40px;
-            padding: 0 32px;
-        }
-
-        .calendar-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06);
+        .cal-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
             overflow: hidden;
         }
 
-        /* ── Day-of-week headers ───────────────────── */
+        /* Day-of-week row */
         .dow-row {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
         }
 
         .dow-cell {
             text-align: center;
-            padding: 10px 4px;
-            font-size: 0.72rem;
+            padding: 8px 4px;
+            font-size: 0.7rem;
             font-weight: 600;
-            color: #64748b;
-            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
             text-transform: uppercase;
         }
 
-        /* ── Calendar Grid ─────────────────────────── */
+        /* Grid */
         .cal-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
         }
 
-        /* ── Day Cell ──────────────────────────────── */
+        /* Day cell */
         .day-cell {
-            min-height: 110px;
-            border-right: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
+            min-height: 108px;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
             padding: 6px 4px 4px;
             position: relative;
-            vertical-align: top;
         }
 
-        .day-cell:nth-child(7n) {
-            border-right: none;
-        }
+        .day-cell:nth-child(7n) { border-right: none; }
 
-        .day-cell.outside-month {
-            background: #fafafa;
-        }
+        .day-cell.outside { background: #faf9f8; }
 
-        .day-cell.today {
-            background: #eff6ff;
-        }
+        .day-cell.today { background: #f0f7ff; }
 
         .date-num {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 500;
-            color: #94a3b8;
+            color: var(--text-tertiary);
             text-align: right;
-            padding-right: 4px;
-            margin-bottom: 3px;
+            padding-right: 5px;
+            margin-bottom: 4px;
             line-height: 1;
         }
 
-        .day-cell:not(.outside-month) .date-num {
-            color: #475569;
-        }
+        .day-cell:not(.outside) .date-num { color: var(--text-secondary); }
 
         .day-cell.today .date-num {
-            background: #2563eb;
+            background: var(--ms-blue);
             color: white;
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-left: auto;
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: 0.74rem;
+            float: right;
+            padding: 0;
         }
 
-        /* ── Event Pills ───────────────────────────── */
+        /* Event pills */
         .event-pill {
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 2px 6px 2px 5px;
-            border-radius: 4px;
+            padding: 2px 6px;
+            border-radius: 3px;
             margin-bottom: 2px;
             cursor: pointer;
-            overflow: hidden;
-            transition: filter 0.1s, opacity 0.1s;
-            font-size: 0.71rem;
-            line-height: 1.4;
+            font-size: 0.7rem;
+            line-height: 1.35;
             white-space: nowrap;
+            overflow: hidden;
+            transition: opacity 0.1s;
         }
 
-        .event-pill:hover {
-            filter: brightness(0.92);
-        }
+        .event-pill:hover { opacity: 0.85; }
 
-        .event-pill-dot {
-            width: 6px;
-            height: 6px;
+        .pill-dot {
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             flex-shrink: 0;
-            background: white;
-            opacity: 0.85;
+            background: rgba(255,255,255,0.8);
         }
 
-        .event-pill-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: 500;
-        }
-
-        .event-pill-time {
+        .pill-time {
             font-weight: 400;
-            opacity: 0.85;
+            opacity: 0.9;
             flex-shrink: 0;
         }
 
-        .more-events {
-            font-size: 0.68rem;
-            color: #64748b;
-            padding: 1px 5px;
-            cursor: pointer;
-            border-radius: 4px;
+        .pill-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        .more-link {
+            font-size: 0.67rem;
+            color: var(--ms-blue);
+            padding: 1px 6px;
             margin-top: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            display: inline-block;
         }
 
-        .more-events:hover {
-            background: #f1f5f9;
-            color: #2563eb;
-        }
+        .more-link:hover { background: var(--ms-blue-light); }
 
-        /* Event color palette (cycles by event index) */
-        .ec-0 {
-            background: #2563eb;
-            color: white;
-        }
+        /* Color palette */
+        .ec-0 { background: #0078d4; color: white; }
+        .ec-1 { background: #00b294; color: white; }
+        .ec-2 { background: #8764b8; color: white; }
+        .ec-3 { background: #107c10; color: white; }
+        .ec-4 { background: #ca5010; color: white; }
+        .ec-5 { background: #c239b3; color: white; }
 
-        .ec-1 {
-            background: #0891b2;
-            color: white;
-        }
-
-        .ec-2 {
-            background: #7c3aed;
-            color: white;
-        }
-
-        .ec-3 {
-            background: #059669;
-            color: white;
-        }
-
-        .ec-4 {
-            background: #d97706;
-            color: white;
-        }
-
-        /* ── Modal Overlay ─────────────────────────── */
+        /* ── Modal ───────────────────────────────────────── */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.5);
-            z-index: 1000;
+            background: rgba(0,0,0,0.4);
+            z-index: 500;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
-        .modal-overlay.open {
-            display: flex;
-        }
+        .modal-overlay.open { display: flex; }
 
         .modal {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 520px;
-            max-height: 90vh;
+            max-width: 500px;
+            max-height: 88vh;
             overflow-y: auto;
-            animation: modal-in 0.2s ease;
+            animation: modal-in 0.18s ease;
         }
 
         @keyframes modal-in {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(10px);
-            }
+            from { opacity: 0; transform: translateY(8px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
 
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+        .modal-stripe {
+            height: 5px;
+            border-radius: 12px 12px 0 0;
         }
 
         .modal-header {
-            padding: 24px 24px 16px;
-            border-bottom: 1px solid #f1f5f9;
-            position: relative;
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
         }
 
-        .modal-color-stripe {
-            height: 4px;
-            border-radius: 16px 16px 0 0;
-            margin: -24px -24px 16px;
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
         }
 
         .modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: #f1f5f9;
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            background: var(--surface-2);
             border: none;
-            border-radius: 8px;
-            width: 30px;
-            height: 30px;
+            border-radius: var(--radius);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
-            color: #64748b;
-            transition: background 0.15s;
+            color: var(--text-secondary);
+            font-size: 13px;
+            transition: background 0.1s;
         }
 
-        .modal-close:hover {
-            background: #e2e8f0;
-            color: #1e293b;
-        }
+        .modal-close:hover { background: var(--surface-3); color: var(--text-primary); }
 
-        .modal-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #0f172a;
-            padding-right: 36px;
-            line-height: 1.3;
-        }
-
-        .modal-body {
-            padding: 16px 24px 24px;
-        }
+        .modal-body { padding: 14px 20px 20px; }
 
         .detail-row {
             display: flex;
             gap: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             align-items: flex-start;
         }
 
         .detail-icon {
-            font-size: 1rem;
+            font-size: 15px;
             flex-shrink: 0;
-            margin-top: 1px;
             width: 20px;
             text-align: center;
+            margin-top: 1px;
         }
 
         .detail-content {
-            font-size: 0.875rem;
-            color: #374151;
+            font-size: 0.855rem;
+            color: var(--text-primary);
             line-height: 1.5;
         }
 
-        .detail-content strong {
+        .detail-label {
             display: block;
-            font-size: 0.72rem;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 0.7rem;
             font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
             margin-bottom: 2px;
         }
 
-        .detail-content a {
-            color: #2563eb;
-            text-decoration: none;
-        }
-
-        .detail-content a:hover {
-            text-decoration: underline;
-        }
+        .detail-content a { color: var(--ms-blue); text-decoration: none; }
+        .detail-content a:hover { text-decoration: underline; }
 
         .modal-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-top: 20px;
-            padding-top: 18px;
-            border-top: 1px solid #f1f5f9;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
         }
 
-        .btn-rsvp {
-            background: #2563eb;
+        .btn-primary {
+            background: var(--ms-blue);
             color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius);
             text-decoration: none;
-            font-size: 0.875rem;
+            font-size: 0.83rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             transition: background 0.15s;
+            border: none;
+            cursor: pointer;
         }
 
-        .btn-rsvp:hover {
-            background: #1d4ed8;
-            text-decoration: none;
-        }
+        .btn-primary:hover { background: var(--ms-blue-dark); text-decoration: none; }
 
-        .btn-gcal {
-            background: #f8fafc;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-            padding: 10px 16px;
-            border-radius: 8px;
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-strong);
+            padding: 8px 14px;
+            border-radius: var(--radius);
             text-decoration: none;
-            font-size: 0.875rem;
+            font-size: 0.83rem;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             transition: background 0.15s;
+            cursor: pointer;
         }
 
-        .btn-gcal:hover {
-            background: #f1f5f9;
-            text-decoration: none;
-        }
+        .btn-secondary:hover { background: var(--surface-2); text-decoration: none; }
 
-        /* ── Footer ────────────────────────────────── */
+        /* ── Footer ──────────────────────────────────────── */
         .page-footer {
             text-align: center;
             padding: 16px;
-            font-size: 0.72rem;
-            color: #94a3b8;
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
         }
 
-        /* ── Responsive ────────────────────────────── */
+        /* ── Responsive ──────────────────────────────────── */
         @media (max-width: 640px) {
-            .page-header {
-                padding: 18px 16px;
-            }
-
-            .page-header-inner {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .calendar-wrapper {
-                padding: 0 12px;
-                margin-top: 16px;
-            }
-
-            .status-bar {
-                padding: 0 12px;
-            }
-
-            .day-cell {
-                min-height: 72px;
-                padding: 4px 2px 2px;
-            }
-
-            .date-num {
-                font-size: 0.72rem;
-            }
-
-            .event-pill {
-                font-size: 0.64rem;
-                padding: 1px 4px;
-            }
-
-            .event-pill-time {
-                display: none;
-            }
-
-            .setup-banner-inner {
-                padding: 16px;
-            }
-
-            .month-label {
-                font-size: 1rem;
-                min-width: 140px;
-            }
+            .app-header-inner { padding: 0 12px; height: 52px; }
+            .header-divider { display: none; }
+            .brand-text p { display: none; }
+            .month-label { min-width: 130px; font-size: 0.85rem; }
+            .cal-wrapper { padding: 0 10px; margin-top: 12px; }
+            .status-bar { padding: 0 10px; }
+            .day-cell { min-height: 68px; padding: 3px 2px 2px; }
+            .event-pill { font-size: 0.62rem; padding: 1px 3px; }
+            .pill-time { display: none; }
+            .setup-banner-inner { padding: 12px; }
         }
 
         @media print {
-            .page-header {
-                background: #1d4ed8;
-                -webkit-print-color-adjust: exact;
-            }
-
-            .modal-overlay {
-                display: none !important;
-            }
-
-            .event-pill {
-                -webkit-print-color-adjust: exact;
-            }
+            .app-header { position: static; }
+            .modal-overlay { display: none !important; }
+            .event-pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- ═══════════════════════════════════════════
-     PAGE HEADER
-     ═══════════════════════════════════════════ -->
-    <header class="page-header">
-        <div class="page-header-inner">
-            <div class="clinic-branding">
-                <h1 id="clinic-name">Community Free Clinic</h1>
-                <p id="clinic-subtitle">Upcoming Events &amp; Appointments</p>
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header class="app-header">
+        <div class="app-header-inner">
+            <div class="brand">
+                <div class="brand-icon">P</div>
+                <div class="brand-text">
+                    <h1 id="clinic-name">Pioneer Medical Foundation</h1>
+                    <p id="clinic-subtitle">Clinic Calendar</p>
+                </div>
             </div>
-            <nav class="month-nav" aria-label="Month navigation">
-                <button class="month-nav-btn" id="prev-btn" aria-label="Previous month">&#8249;</button>
+            <div class="header-divider"></div>
+            <div class="month-controls">
+                <button class="nav-btn" id="prev-btn" aria-label="Previous month">&#8249;</button>
                 <span class="month-label" id="month-label"></span>
-                <button class="month-nav-btn" id="next-btn" aria-label="Next month">&#8250;</button>
+                <button class="nav-btn" id="next-btn" aria-label="Next month">&#8250;</button>
                 <button class="today-btn" id="today-btn">Today</button>
-            </nav>
+            </div>
+            <div class="header-spacer"></div>
+            <div id="auth-area"></div>
         </div>
     </header>
 
-    <!-- ═══════════════════════════════════════════
-     SETUP INSTRUCTIONS (hidden after config)
-     ═══════════════════════════════════════════ -->
+    <!-- ═══════════════════ SETUP BANNER ═══════════════════ -->
     <div class="setup-banner" id="setup-banner" style="display:none">
         <div class="setup-banner-inner">
-            <h2>⚙️ Setup Required — Configure your Google Calendar connection</h2>
-            <p style="font-size:0.82rem;color:#78350f;margin-bottom:8px;">
-                Open this HTML file in a text editor and update the <code
-                    style="background:#fef3c7;padding:1px 5px;border-radius:3px;">CONFIG</code> block near the top of
-                the <code style="background:#fef3c7;padding:1px 5px;border-radius:3px;">&lt;script&gt;</code> tag.
+            <h2>⚙️ Setup Required — Configure your Microsoft Outlook Calendar connection</h2>
+            <p style="font-size:0.8rem;color:#7a5700;margin-bottom:8px;">
+                Open this HTML file in a text editor and fill in the <code>CONFIG</code> block near the top of the
+                <code>&lt;script&gt;</code> tag, then re-open the file.
             </p>
             <div class="setup-steps">
                 <div class="setup-step">
-                    <strong>Step 1 — Get a Google API Key</strong>
-                    <span>Go to <em>console.cloud.google.com</em> → Create project → Enable <em>Google Calendar API</em>
-                        → Credentials → Create API Key. Restrict it to the Calendar API and your domain.</span>
+                    <strong>Step 1 — Register an Azure AD app</strong>
+                    <span>Go to <em>portal.azure.com</em> → Azure Active Directory → App registrations → New registration.
+                        Set the redirect URI to <code>http://localhost</code> (or your domain) as a Single-page app (SPA).</span>
                 </div>
                 <div class="setup-step">
-                    <strong>Step 2 — Make your Calendar public</strong>
-                    <span>In Google Calendar, click the three dots next to your calendar → <em>Settings and sharing</em>
-                        → check <em>Make available to public</em>.</span>
+                    <strong>Step 2 — Grant calendar permissions</strong>
+                    <span>Under your app → API Permissions → Add → Microsoft Graph → Delegated →
+                        add <code>Calendars.Read</code>. Grant admin consent if required.</span>
                 </div>
                 <div class="setup-step">
-                    <strong>Step 3 — Find your Calendar ID</strong>
-                    <span>In Calendar settings → <em>Integrate calendar</em> → copy the <em>Calendar ID</em> (looks like
-                        <code>abc123@group.calendar.google.com</code>).</span>
+                    <strong>Step 3 — Copy your Client ID &amp; Tenant ID</strong>
+                    <span>From the app's Overview page, copy the <em>Application (client) ID</em> and
+                        <em>Directory (tenant) ID</em> into the CONFIG below.</span>
                 </div>
                 <div class="setup-step">
-                    <strong>Step 4 — Add RSVP links to events</strong>
-                    <span>In the event description, add a line like <code>RSVP: https://your-link.com</code> and it will
-                        appear as a button on the calendar.</span>
+                    <strong>Step 4 — Find your Calendar ID</strong>
+                    <span>Leave <code>CALENDAR_ID</code> blank to use the primary calendar, or use Microsoft Graph Explorer
+                        to call <code>GET /me/calendars</code> and copy the <code>id</code> of the shared calendar.</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Status messages (loading / error / empty) -->
+    <!-- Status bar -->
     <div class="status-bar">
         <div class="status-msg" id="status-msg" style="display:none"></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════
-     CALENDAR
-     ═══════════════════════════════════════════ -->
-    <main class="calendar-wrapper">
-        <div class="calendar-card">
-            <div class="dow-row" role="row">
+    <!-- ═══════════════════ CALENDAR ═══════════════════ -->
+    <main class="cal-wrapper">
+        <div class="cal-card">
+            <div class="dow-row">
                 <div class="dow-cell">Sun</div>
                 <div class="dow-cell">Mon</div>
                 <div class="dow-cell">Tue</div>
@@ -701,217 +708,275 @@
         </div>
     </main>
 
-    <!-- ═══════════════════════════════════════════
-     EVENT DETAIL MODAL
-     ═══════════════════════════════════════════ -->
-    <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
-        <div class="modal" id="modal">
+    <!-- ═══════════════════ EVENT MODAL ═══════════════════ -->
+    <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-el">
+        <div class="modal">
+            <div class="modal-stripe" id="modal-stripe"></div>
             <div class="modal-header">
-                <div class="modal-color-stripe" id="modal-stripe"></div>
+                <div class="modal-title" id="modal-title-el"></div>
                 <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
-                <div class="modal-title" id="modal-title-text"></div>
             </div>
             <div class="modal-body" id="modal-body"></div>
         </div>
     </div>
 
-    <footer class="page-footer">
-        Events powered by Google Calendar
-    </footer>
+    <footer class="page-footer">Events powered by Microsoft Outlook Calendar</footer>
 
     <script>
         /* ============================================================
-           CONFIGURATION — Edit these four values, then save the file.
+           CONFIGURATION — Edit these values, then save the file.
            ============================================================ */
         const CONFIG = {
-            API_KEY: '',                          // Your Google Calendar API key
-            CALENDAR_ID: '',                          // e.g. abc123@group.calendar.google.com
-            CLINIC_NAME: 'Pioneer Medical Foundation',     // default values from online Shown in the page header
-            CLINIC_SUBTITLE: 'Upcoming Events & Appointments',
+            CLIENT_ID:    '',          // Azure App Registration client (application) ID
+            TENANT_ID:    'common',    // Your Azure tenant ID, or 'common' for personal + work accounts
+            CALENDAR_ID:  '',          // Leave blank for primary calendar, or paste a calendar ID from Graph API
+            CLINIC_NAME:     'Pioneer Medical Foundation',
+            CLINIC_SUBTITLE: 'Clinic Calendar',
         };
         /* ============================================================ */
 
-        // ── Constants ─────────────────────────────────────────────────
-        const MONTHS = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        const MAX_PILLS = 3; // max events shown per day before "+N more"
-        const COLOR_CLASSES = ['ec-0', 'ec-1', 'ec-2', 'ec-3', 'ec-4'];
+        // ── MSAL setup ────────────────────────────────────────────────
+        let msalApp = null;
+        let currentAccount = null;
+
+        if (CONFIG.CLIENT_ID) {
+            msalApp = new msal.PublicClientApplication({
+                auth: {
+                    clientId: CONFIG.CLIENT_ID,
+                    authority: `https://login.microsoftonline.com/${CONFIG.TENANT_ID}`,
+                    redirectUri: window.location.href.split('?')[0].split('#')[0],
+                },
+                cache: { cacheLocation: 'sessionStorage' },
+            });
+        }
+
+        const SCOPES = ['Calendars.Read', 'User.Read'];
 
         // ── State ─────────────────────────────────────────────────────
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+        const COLORS = ['ec-0','ec-1','ec-2','ec-3','ec-4','ec-5'];
+        const COLOR_HEX = {
+            'ec-0':'#0078d4','ec-1':'#00b294','ec-2':'#8764b8',
+            'ec-3':'#107c10','ec-4':'#ca5010','ec-5':'#c239b3'
+        };
+        const MAX_PILLS = 3;
+
         let currentDate = new Date();
-        let eventsCache = {};   // keyed by "YYYY-MM"
-        let allColors = {};   // event.id → color class (stable across re-renders)
+        let eventsCache = {};
+        let eventColors = {};
         let colorCounter = 0;
 
         // ── DOM refs ──────────────────────────────────────────────────
-        const $grid = document.getElementById('cal-grid');
-        const $label = document.getElementById('month-label');
-        const $status = document.getElementById('status-msg');
-        const $setup = document.getElementById('setup-banner');
+        const $grid    = document.getElementById('cal-grid');
+        const $label   = document.getElementById('month-label');
+        const $status  = document.getElementById('status-msg');
+        const $setup   = document.getElementById('setup-banner');
         const $overlay = document.getElementById('modal-overlay');
-        const $modal = document.getElementById('modal');
-        const $prevBtn = document.getElementById('prev-btn');
-        const $nextBtn = document.getElementById('next-btn');
-        const $todayBtn = document.getElementById('today-btn');
-        const $closeBtnM = document.getElementById('modal-close');
+        const $authArea = document.getElementById('auth-area');
 
-        // ── Init ──────────────────────────────────────────────────────
+        // ── Boot ──────────────────────────────────────────────────────
         document.getElementById('clinic-name').textContent = CONFIG.CLINIC_NAME;
         document.getElementById('clinic-subtitle').textContent = CONFIG.CLINIC_SUBTITLE;
         document.title = CONFIG.CLINIC_NAME + ' — Calendar';
 
-        if (!CONFIG.API_KEY || !CONFIG.CALENDAR_ID) {
-            $setup.style.display = 'block';
-            renderGrid([]);   // render empty grid so page isn't blank
-            setLabel();
-        } else {
-            $setup.style.display = 'none';
-            loadAndRender();
-        }
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        $overlay.addEventListener('click', e => { if (e.target === $overlay) closeModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-        // ── Navigation ────────────────────────────────────────────────
-        $prevBtn.addEventListener('click', () => {
+        document.getElementById('prev-btn').addEventListener('click', () => {
             currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
             loadAndRender();
         });
-        $nextBtn.addEventListener('click', () => {
+        document.getElementById('next-btn').addEventListener('click', () => {
             currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
             loadAndRender();
         });
-        $todayBtn.addEventListener('click', () => {
+        document.getElementById('today-btn').addEventListener('click', () => {
             currentDate = new Date();
             loadAndRender();
         });
 
-        // ── Modal close ────────────────────────────────────────────────
-        $closeBtnM.addEventListener('click', closeModal);
-        $overlay.addEventListener('click', e => { if (e.target === $overlay) closeModal(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+        if (!CONFIG.CLIENT_ID) {
+            $setup.style.display = 'block';
+            setLabel();
+            renderGrid([]);
+        } else {
+            initAuth();
+        }
+
+        // ── Auth ──────────────────────────────────────────────────────
+        async function initAuth() {
+            // Handle redirect after sign-in
+            await msalApp.handleRedirectPromise().catch(() => {});
+            const accounts = msalApp.getAllAccounts();
+            if (accounts.length > 0) {
+                currentAccount = accounts[0];
+                renderAuthUI(currentAccount);
+                loadAndRender();
+            } else {
+                renderSignInButton();
+                setLabel();
+                renderGrid([]);
+                showStatus('info', '🔑 Sign in with your Microsoft account to view calendar events.');
+            }
+        }
+
+        function renderSignInButton() {
+            $authArea.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.className = 'ms-signin-btn';
+            btn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                  <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                  <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                  <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                </svg>
+                Sign in with Microsoft`;
+            btn.addEventListener('click', signIn);
+            $authArea.appendChild(btn);
+        }
+
+        function renderAuthUI(account) {
+            $authArea.innerHTML = '';
+            const chip = document.createElement('div');
+            chip.className = 'user-chip';
+            const initials = (account.name || account.username || '?')
+                .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            chip.innerHTML = `<div class="user-avatar">${initials}</div>
+                <span>${account.name || account.username}</span>
+                <button class="signout-btn" id="signout-btn">Sign out</button>`;
+            $authArea.appendChild(chip);
+            document.getElementById('signout-btn').addEventListener('click', signOut);
+        }
+
+        async function signIn() {
+            try {
+                await msalApp.loginRedirect({ scopes: SCOPES });
+            } catch (e) {
+                showStatus('error', '⚠️ Sign-in failed: ' + e.message);
+            }
+        }
+
+        function signOut() {
+            msalApp.logoutRedirect({ account: currentAccount });
+        }
+
+        async function getToken() {
+            const req = { scopes: SCOPES, account: currentAccount };
+            try {
+                const res = await msalApp.acquireTokenSilent(req);
+                return res.accessToken;
+            } catch {
+                const res = await msalApp.acquireTokenRedirect(req);
+                return res?.accessToken;
+            }
+        }
 
         // ── Fetch + Render ────────────────────────────────────────────
         async function loadAndRender() {
             const y = currentDate.getFullYear();
             const m = currentDate.getMonth();
-            const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+            const key = `${y}-${m}`;
 
             setLabel();
             renderGrid(eventsCache[key] || []);
-
-            if (eventsCache[key]) return; // cached
+            if (eventsCache[key]) return;
+            if (!currentAccount) return;
 
             showStatus('loading', '<div class="spinner"></div> Loading events…');
-
             try {
                 const events = await fetchEvents(y, m);
                 eventsCache[key] = events;
                 clearStatus();
                 renderGrid(events);
             } catch (err) {
-                const msg = friendlyError(err);
-                showStatus('error', '⚠️ ' + msg);
+                showStatus('error', '⚠️ ' + friendlyError(err));
                 renderGrid([]);
             }
         }
 
         async function fetchEvents(year, month) {
-            const timeMin = new Date(year, month, 1).toISOString();
-            const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
-            const url = [
-                'https://www.googleapis.com/calendar/v3/calendars/',
-                encodeURIComponent(CONFIG.CALENDAR_ID),
-                '/events?key=', encodeURIComponent(CONFIG.API_KEY),
-                '&timeMin=', encodeURIComponent(timeMin),
-                '&timeMax=', encodeURIComponent(timeMax),
-                '&singleEvents=true&orderBy=startTime&maxResults=250'
-            ].join('');
+            const token = await getToken();
+            const start = new Date(year, month, 1).toISOString();
+            const end   = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
-            const res = await fetch(url);
+            const base = CONFIG.CALENDAR_ID
+                ? `https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(CONFIG.CALENDAR_ID)}/events`
+                : 'https://graph.microsoft.com/v1.0/me/calendarView';
+
+            const url = `${base}?startDateTime=${encodeURIComponent(start)}&endDateTime=${encodeURIComponent(end)}`
+                + `&$select=subject,start,end,location,body,webLink,isAllDay`
+                + `&$orderby=start/dateTime&$top=250`;
+
+            const res = await fetch(url, {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
-                const apiMsg = body?.error?.message || '';
-                throw Object.assign(new Error(apiMsg), { status: res.status });
+                throw Object.assign(new Error(body?.error?.message || ''), { status: res.status });
             }
             const data = await res.json();
-            return data.items || [];
+            return data.value || [];
         }
 
-        // ── Calendar Grid Rendering ───────────────────────────────────
+        // ── Grid ──────────────────────────────────────────────────────
         function renderGrid(events) {
             const y = currentDate.getFullYear();
             const m = currentDate.getMonth();
             const today = new Date();
 
-            // Build day → events map
             const byDay = {};
             for (const ev of events) {
                 const day = getEventDay(ev);
                 if (!byDay[day]) byDay[day] = [];
                 byDay[day].push(ev);
-                // Assign a stable color
-                if (!allColors[ev.id]) {
-                    allColors[ev.id] = COLOR_CLASSES[colorCounter++ % COLOR_CLASSES.length];
+                if (!eventColors[ev.id]) {
+                    eventColors[ev.id] = COLORS[colorCounter++ % COLORS.length];
                 }
             }
 
-            // Calendar start: Sunday of the week containing the 1st
             const firstOfMonth = new Date(y, m, 1);
-            const startOffset = firstOfMonth.getDay(); // 0=Sun
-            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const startOffset  = firstOfMonth.getDay();
+            const daysInMonth  = new Date(y, m + 1, 0).getDate();
             const prevMonthDays = new Date(y, m, 0).getDate();
 
             $grid.innerHTML = '';
 
-            // Total cells: 6 rows × 7 = 42
             for (let i = 0; i < 42; i++) {
                 const dayNum = i - startOffset + 1;
-                let cellDate, isOutside = false;
+                let cellDate, outside = false;
 
-                if (dayNum < 1) {
-                    cellDate = prevMonthDays + dayNum;
-                    isOutside = true;
-                } else if (dayNum > daysInMonth) {
-                    cellDate = dayNum - daysInMonth;
-                    isOutside = true;
-                } else {
-                    cellDate = dayNum;
-                }
+                if (dayNum < 1) { cellDate = prevMonthDays + dayNum; outside = true; }
+                else if (dayNum > daysInMonth) { cellDate = dayNum - daysInMonth; outside = true; }
+                else cellDate = dayNum;
 
-                const isToday = !isOutside
+                const isToday = !outside
                     && cellDate === today.getDate()
                     && m === today.getMonth()
                     && y === today.getFullYear();
 
                 const cell = document.createElement('div');
-                cell.className = 'day-cell'
-                    + (isOutside ? ' outside-month' : '')
-                    + (isToday ? ' today' : '');
+                cell.className = 'day-cell' + (outside ? ' outside' : '') + (isToday ? ' today' : '');
                 cell.setAttribute('role', 'gridcell');
 
-                // Date number
                 const numEl = document.createElement('div');
                 numEl.className = 'date-num';
                 numEl.textContent = cellDate;
-                if (isToday) {
-                    numEl.setAttribute('aria-label', 'Today, ' + cellDate);
-                }
                 cell.appendChild(numEl);
 
-                // Events for this day
-                if (!isOutside && byDay[cellDate]) {
-                    const dayEvents = byDay[cellDate];
-                    const shown = dayEvents.slice(0, MAX_PILLS);
-                    const rest = dayEvents.length - shown.length;
-
-                    for (const ev of shown) {
-                        cell.appendChild(makePill(ev));
-                    }
+                if (!outside && byDay[cellDate]) {
+                    const dayEvs = byDay[cellDate];
+                    const shown  = dayEvs.slice(0, MAX_PILLS);
+                    const rest   = dayEvs.length - shown.length;
+                    for (const ev of shown) cell.appendChild(makePill(ev));
                     if (rest > 0) {
                         const more = document.createElement('div');
-                        more.className = 'more-events';
+                        more.className = 'more-link';
                         more.textContent = `+${rest} more`;
-                        more.addEventListener('click', () => openDayModal(dayEvents, cellDate, y, m));
+                        more.addEventListener('click', () => openDayModal(dayEvs, cellDate, y, m));
                         cell.appendChild(more);
                     }
                 }
@@ -919,8 +984,7 @@
                 $grid.appendChild(cell);
             }
 
-            // Show empty message if no events and configured
-            if (events.length === 0 && CONFIG.API_KEY && CONFIG.CALENDAR_ID) {
+            if (events.length === 0 && currentAccount) {
                 showStatus('empty', '📅 No events this month.');
             } else if (events.length > 0) {
                 clearStatus();
@@ -929,25 +993,25 @@
 
         function makePill(ev) {
             const pill = document.createElement('div');
-            pill.className = 'event-pill ' + (allColors[ev.id] || 'ec-0');
+            pill.className = 'event-pill ' + (eventColors[ev.id] || 'ec-0');
             pill.setAttribute('role', 'button');
             pill.setAttribute('tabindex', '0');
-            pill.setAttribute('aria-label', ev.summary || '(No title)');
+            pill.setAttribute('aria-label', ev.subject || '(No title)');
 
-            const dot = document.createElement('span');
-            dot.className = 'event-pill-dot';
-
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'event-pill-time';
-            timeSpan.textContent = formatShortTime(ev);
-
-            const textSpan = document.createElement('span');
-            textSpan.className = 'event-pill-text';
-            textSpan.textContent = (ev.summary || '(No title)');
-
-            if (timeSpan.textContent) pill.appendChild(dot);
-            if (timeSpan.textContent) pill.appendChild(timeSpan);
-            pill.appendChild(textSpan);
+            const time = formatShortTime(ev);
+            if (time) {
+                const dot = document.createElement('span');
+                dot.className = 'pill-dot';
+                pill.appendChild(dot);
+                const ts = document.createElement('span');
+                ts.className = 'pill-time';
+                ts.textContent = time;
+                pill.appendChild(ts);
+            }
+            const txt = document.createElement('span');
+            txt.className = 'pill-text';
+            txt.textContent = ev.subject || '(No title)';
+            pill.appendChild(txt);
 
             pill.addEventListener('click', () => openEventModal(ev));
             pill.addEventListener('keydown', e => {
@@ -958,92 +1022,84 @@
 
         // ── Modals ────────────────────────────────────────────────────
         function openEventModal(ev) {
-            const colorClass = allColors[ev.id] || 'ec-0';
-            const colorMap = {
-                'ec-0': '#2563eb', 'ec-1': '#0891b2',
-                'ec-2': '#7c3aed', 'ec-3': '#059669', 'ec-4': '#d97706'
-            };
-            const color = colorMap[colorClass] || '#2563eb';
+            const cls = eventColors[ev.id] || 'ec-0';
+            const color = COLOR_HEX[cls] || '#0078d4';
 
             document.getElementById('modal-stripe').style.background = color;
-            document.getElementById('modal-title-text').textContent = ev.summary || '(No title)';
+            document.getElementById('modal-title-el').textContent = ev.subject || '(No title)';
 
             const body = document.getElementById('modal-body');
             body.innerHTML = '';
 
-            // Date & time
-            body.appendChild(makeDetailRow('📅', 'Date & Time', formatFullDateTime(ev)));
+            body.appendChild(detailRow('📅', 'Date & Time', formatFullDateTime(ev)));
 
-            // Location
-            if (ev.location) {
-                const locContent = document.createElement('div');
-                locContent.innerHTML = '<strong>Location</strong>'
-                    + sanitize(ev.location).replace(/\n/g, '<br>');
-                body.appendChild(makeDetailRowEl('📍', locContent));
+            if (ev.location?.displayName) {
+                body.appendChild(detailRow('📍', 'Location', ev.location.displayName));
             }
 
-            // Description
-            if (ev.description) {
-                const descContent = document.createElement('div');
-                const cleanDesc = stripHtml(ev.description);
-                descContent.innerHTML = '<strong>Description</strong>'
-                    + linkify(sanitize(cleanDesc)).replace(/\n/g, '<br>');
-                body.appendChild(makeDetailRowEl('📝', descContent));
+            const descText = ev.body?.content ? stripHtml(ev.body.content) : '';
+            if (descText) {
+                const div = document.createElement('div');
+                div.className = 'detail-content';
+                div.innerHTML = '<span class="detail-label">Description</span>'
+                    + linkify(sanitize(descText)).replace(/\n/g, '<br>');
+                const row = document.createElement('div');
+                row.className = 'detail-row';
+                const icon = document.createElement('span');
+                icon.className = 'detail-icon'; icon.textContent = '📝';
+                row.appendChild(icon); row.appendChild(div);
+                body.appendChild(row);
             }
 
-            // Actions
             const actions = document.createElement('div');
             actions.className = 'modal-actions';
 
-            const rsvp = extractRSVP(ev.description || '');
+            const rsvp = extractRSVP(descText);
             if (rsvp) {
                 const a = document.createElement('a');
-                a.href = rsvp;
-                a.className = 'btn-rsvp';
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.innerHTML = '✉️ RSVP / Register';
+                a.href = rsvp; a.className = 'btn-primary';
+                a.target = '_blank'; a.rel = 'noopener noreferrer';
+                a.textContent = 'RSVP / Register';
                 actions.appendChild(a);
             }
 
-            if (ev.htmlLink) {
+            if (ev.webLink) {
                 const a = document.createElement('a');
-                a.href = ev.htmlLink;
-                a.className = 'btn-gcal';
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                a.innerHTML = '🗓️ View in Google Calendar';
+                a.href = ev.webLink; a.className = 'btn-secondary';
+                a.target = '_blank'; a.rel = 'noopener noreferrer';
+                a.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                      <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                      <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                      <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                      <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                    </svg>
+                    Open in Outlook`;
                 actions.appendChild(a);
             }
 
             if (actions.children.length > 0) body.appendChild(actions);
 
             $overlay.classList.add('open');
-            $closeBtnM.focus();
+            document.getElementById('modal-close').focus();
             document.body.style.overflow = 'hidden';
         }
 
         function openDayModal(events, day, year, month) {
-            document.getElementById('modal-stripe').style.background = '#64748b';
-            document.getElementById('modal-title-text').textContent =
-                `${MONTHS[month]} ${day}, ${year} — All Events`;
+            document.getElementById('modal-stripe').style.background = '#605e5c';
+            document.getElementById('modal-title-el').textContent =
+                `${MONTHS[month]} ${day}, ${year}`;
 
             const body = document.getElementById('modal-body');
             body.innerHTML = '';
 
             for (const ev of events) {
-                const colorClass = allColors[ev.id] || 'ec-0';
-                const colorMap = {
-                    'ec-0': '#2563eb', 'ec-1': '#0891b2',
-                    'ec-2': '#7c3aed', 'ec-3': '#059669', 'ec-4': '#d97706'
-                };
-                const color = colorMap[colorClass] || '#2563eb';
-
+                const color = COLOR_HEX[eventColors[ev.id] || 'ec-0'];
                 const card = document.createElement('div');
-                card.style.cssText = 'border-left:3px solid ' + color
-                    + ';padding:10px 12px;margin-bottom:12px;background:#f8fafc;border-radius:0 8px 8px 0;cursor:pointer;';
-                card.innerHTML = `<div style="font-weight:600;font-size:.9rem;color:#0f172a">${sanitize(ev.summary || '(No title)')}</div>`
-                    + `<div style="font-size:.78rem;color:#64748b;margin-top:2px">${formatFullDateTime(ev)}</div>`;
+                card.style.cssText = `border-left:3px solid ${color};padding:10px 12px;`
+                    + `margin-bottom:10px;background:var(--surface-2);border-radius:0 6px 6px 0;cursor:pointer;`;
+                card.innerHTML = `<div style="font-weight:600;font-size:.88rem">${sanitize(ev.subject||'(No title)')}</div>`
+                    + `<div style="font-size:.76rem;color:var(--text-secondary);margin-top:2px">${formatFullDateTime(ev)}</div>`;
                 card.addEventListener('click', () => openEventModal(ev));
                 body.appendChild(card);
             }
@@ -1057,24 +1113,12 @@
             document.body.style.overflow = '';
         }
 
-        function makeDetailRow(icon, label, text) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'detail-row';
-            wrapper.innerHTML = `<span class="detail-icon">${icon}</span>`
-                + `<div class="detail-content"><strong>${label}</strong>${sanitize(text)}</div>`;
-            return wrapper;
-        }
-
-        function makeDetailRowEl(icon, contentEl) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'detail-row';
-            const iconEl = document.createElement('span');
-            iconEl.className = 'detail-icon';
-            iconEl.textContent = icon;
-            contentEl.className = 'detail-content';
-            wrapper.appendChild(iconEl);
-            wrapper.appendChild(contentEl);
-            return wrapper;
+        function detailRow(icon, label, text) {
+            const row = document.createElement('div');
+            row.className = 'detail-row';
+            row.innerHTML = `<span class="detail-icon">${icon}</span>`
+                + `<div class="detail-content"><span class="detail-label">${label}</span>${sanitize(text)}</div>`;
+            return row;
         }
 
         // ── Helpers ───────────────────────────────────────────────────
@@ -1084,52 +1128,43 @@
 
         function getEventDay(ev) {
             const s = ev.start?.dateTime || ev.start?.date || '';
-            return parseInt(s.slice(8, 10), 10);
+            if (!s) return -1;
+            if (ev.isAllDay || ev.start?.date) return parseInt(s.slice(8, 10), 10);
+            return new Date(s).getDate();
         }
 
         function formatShortTime(ev) {
-            if (!ev.start?.dateTime) return ''; // all-day
+            if (ev.isAllDay || !ev.start?.dateTime) return '';
             const d = new Date(ev.start.dateTime);
-            const h = d.getHours();
-            const m = d.getMinutes();
+            const h = d.getHours(), min = d.getMinutes();
             const ampm = h >= 12 ? 'p' : 'a';
-            const h12 = h % 12 || 12;
-            return h12 + (m ? ':' + String(m).padStart(2, '0') : '') + ampm;
+            return (h % 12 || 12) + (min ? ':' + String(min).padStart(2,'0') : '') + ampm;
         }
 
         function formatFullDateTime(ev) {
-            if (ev.start?.date && !ev.start?.dateTime) {
-                // All-day
-                const d = new Date(ev.start.date + 'T12:00:00');
-                const end = ev.end?.date ? new Date(
-                    new Date(ev.end.date).getTime() - 86400000
-                ) : null;
-                const fmt = d => MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-                if (end && end > d) return 'All Day · ' + fmt(d) + ' – ' + fmt(end);
-                return 'All Day · ' + fmt(d);
+            if (ev.isAllDay) {
+                const d = new Date((ev.start?.dateTime || ev.start?.date) + (ev.start?.date ? 'T12:00:00' : ''));
+                return 'All Day · ' + d.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
             }
             const start = new Date(ev.start.dateTime);
-            const end = ev.end?.dateTime ? new Date(ev.end.dateTime) : null;
-            const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-            const datePart = start.toLocaleDateString(undefined, opts);
-            const startT = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-            const endT = end ? end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
-            return datePart + (endT ? ' · ' + startT + ' – ' + endT : ' · ' + startT);
+            const end   = ev.end?.dateTime ? new Date(ev.end.dateTime) : null;
+            const datePart = start.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+            const startT   = start.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+            const endT     = end ? end.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }) : null;
+            return datePart + ' · ' + startT + (endT ? ' – ' + endT : '');
         }
 
         function extractRSVP(text) {
             if (!text) return null;
-            const clean = stripHtml(text);
             const patterns = [
                 /RSVP[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
                 /Register[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
                 /Sign[\s-]?up[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
-                /Registration[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
-                /Link[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
                 /Form[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
+                /Link[:\s]+?(https?:\/\/[^\s\n<>"]+)/i,
             ];
             for (const p of patterns) {
-                const m = clean.match(p);
+                const m = text.match(p);
                 if (m) return m[1].replace(/[.,;)]+$/, '');
             }
             return null;
@@ -1142,8 +1177,8 @@
 
         function sanitize(str) {
             return String(str)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
 
         function stripHtml(html) {
@@ -1158,19 +1193,16 @@
             $status.style.display = 'flex';
         }
 
-        function clearStatus() {
-            $status.style.display = 'none';
-        }
+        function clearStatus() { $status.style.display = 'none'; }
 
         function friendlyError(err) {
             const s = err.status;
-            const m = err.message || '';
-            if (s === 400) return 'Invalid Calendar ID or API key. Check your CONFIG values.';
-            if (s === 403) return 'Access denied — make sure the calendar is set to Public and the API key has Calendar API access.';
+            if (s === 401) return 'Authentication expired — please sign in again.';
+            if (s === 403) return 'Access denied — make sure your account has permission to read this calendar.';
             if (s === 404) return 'Calendar not found. Double-check the CALENDAR_ID in CONFIG.';
-            if (s === 429) return 'Too many requests. Please wait a moment and try again.';
+            if (s === 429) return 'Too many requests — please wait a moment and try again.';
             if (!navigator.onLine) return 'No internet connection.';
-            return 'Could not load events' + (m ? ': ' + m : '.');
+            return 'Could not load events' + (err.message ? ': ' + err.message : '.');
         }
     </script>
 </body>
